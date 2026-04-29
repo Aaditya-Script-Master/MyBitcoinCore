@@ -1,0 +1,1595 @@
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌍 World Explorer - Virtual Globe Simulator</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
+body {
+  background: #0a0a1a;
+  font-family: 'Rajdhani', sans-serif;
+  overflow: hidden;
+  color: #fff;
+  width: 100vw;
+  height: 100vh;
+}
+
+#gameContainer {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+#startScreen {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: radial-gradient(ellipse at center, #1a1a3e 0%, #0a0a1a 70%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  transition: opacity 0.8s;
+}
+
+#startScreen h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(2rem, 6vw, 4.5rem);
+  background: linear-gradient(135deg, #00f5ff, #7b2ff7, #ff006e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: center;
+  margin-bottom: 10px;
+  animation: titlePulse 3s ease-in-out infinite;
+}
+
+@keyframes titlePulse {
+  0%, 100% { filter: brightness(1); transform: scale(1); }
+  50% { filter: brightness(1.3); transform: scale(1.02); }
+}
+
+#startScreen .subtitle {
+  font-size: clamp(0.9rem, 2.5vw, 1.4rem);
+  color: #8888aa;
+  margin-bottom: 40px;
+  text-align: center;
+  padding: 0 20px;
+}
+
+.startBtn {
+  padding: 15px 50px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.2rem;
+  background: linear-gradient(135deg, #7b2ff7, #00f5ff);
+  border: none;
+  border-radius: 50px;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.startBtn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 30px rgba(123, 47, 247, 0.6);
+}
+
+#hud {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 50;
+}
+
+#hudTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 15px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hudPanel {
+  background: rgba(10, 10, 40, 0.85);
+  border: 1px solid rgba(123, 47, 247, 0.4);
+  border-radius: 12px;
+  padding: 10px 18px;
+  backdrop-filter: blur(10px);
+  pointer-events: auto;
+}
+
+.hudLabel {
+  font-size: 0.7rem;
+  color: #00f5ff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.hudValue {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  font-family: 'Orbitron', sans-serif;
+}
+
+#locationName {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(1rem, 3vw, 1.6rem);
+  color: #ff006e;
+  text-align: center;
+  padding: 8px 20px;
+  margin-top: 5px;
+}
+
+#locationDesc {
+  font-size: 0.85rem;
+  color: #aaa;
+  text-align: center;
+}
+
+#minimap {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  width: 180px;
+  height: 180px;
+  border: 2px solid rgba(0, 245, 255, 0.5);
+  border-radius: 50%;
+  overflow: hidden;
+  pointer-events: auto;
+  background: rgba(10, 10, 40, 0.8);
+}
+
+#miniCanvas {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+#compass {
+  position: absolute;
+  bottom: 200px;
+  right: 50px;
+  width: 50px;
+  height: 50px;
+}
+
+#inventory {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+}
+
+.invSlot {
+  width: 50px;
+  height: 50px;
+  background: rgba(10, 10, 40, 0.85);
+  border: 1px solid rgba(123, 47, 247, 0.4);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  pointer-events: auto;
+  transition: all 0.2s;
+}
+
+.invSlot.active {
+  border-color: #00f5ff;
+  box-shadow: 0 0 15px rgba(0, 245, 255, 0.5);
+}
+
+#controls {
+  position: absolute;
+  bottom: 15px;
+  left: 15px;
+}
+
+.ctrlBtn {
+  width: 55px;
+  height: 55px;
+  background: rgba(10, 10, 40, 0.85);
+  border: 1px solid rgba(123, 47, 247, 0.4);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 1.3rem;
+  cursor: pointer;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  margin: 3px;
+}
+
+.ctrlBtn:hover, .ctrlBtn:active {
+  background: rgba(123, 47, 247, 0.5);
+  transform: scale(1.1);
+}
+
+#controlsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 55px);
+  grid-template-rows: repeat(3, 55px);
+  gap: 2px;
+}
+
+#gameOver {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.9);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+#gameOver h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 3rem;
+  color: #ff006e;
+  margin-bottom: 20px;
+}
+
+#finalScore {
+  font-size: 2rem;
+  color: #00f5ff;
+  font-family: 'Orbitron', sans-serif;
+}
+
+#worldMap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 80;
+  display: none;
+  background: rgba(10, 10, 40, 0.95);
+  border: 2px solid rgba(0, 245, 255, 0.5);
+  border-radius: 20px;
+  padding: 20px;
+  pointer-events: auto;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+#worldMap h3 {
+  font-family: 'Orbitron', sans-serif;
+  color: #00f5ff;
+  text-align: center;
+  margin-bottom: 15px;
+  font-size: 1.3rem;
+}
+
+#worldMapGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 5px;
+}
+
+.mapLoc {
+  padding: 12px;
+  background: rgba(123, 47, 247, 0.15);
+  border: 1px solid rgba(123, 47, 247, 0.3);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-align: center;
+}
+
+.mapLoc:hover {
+  background: rgba(123, 47, 247, 0.4);
+  border-color: #00f5ff;
+  transform: scale(1.05);
+}
+
+.mapLoc .locName {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #fff;
+}
+
+.mapLoc .locType {
+  font-size: 0.75rem;
+  color: #8888aa;
+  margin-top: 3px;
+}
+
+.mapLoc .locCountry {
+  font-size: 0.7rem;
+  color: #ff006e;
+  margin-top: 2px;
+}
+
+#dialogue {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(500px, 90vw);
+  background: rgba(10, 10, 40, 0.95);
+  border: 1px solid rgba(0, 245, 255, 0.5);
+  border-radius: 15px;
+  padding: 15px 20px;
+  display: none;
+  pointer-events: auto;
+  z-index: 60;
+}
+
+#dialogueSpeaker {
+  color: #ff006e;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 5px;
+}
+
+#dialogueText {
+  color: #ddd;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+#notification {
+  position: absolute;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10, 10, 40, 0.9);
+  border: 1px solid #00f5ff;
+  border-radius: 10px;
+  padding: 10px 25px;
+  font-size: 0.95rem;
+  color: #00f5ff;
+  display: none;
+  z-index: 70;
+  animation: notifSlide 0.3s ease;
+  text-align: center;
+}
+
+@keyframes notifSlide {
+  from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+#loadingBar {
+  width: 300px;
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+  margin-top: 30px;
+  overflow: hidden;
+}
+
+#loadingFill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #7b2ff7, #00f5ff);
+  border-radius: 3px;
+  transition: width 0.1s;
+}
+
+@media (max-width: 768px) {
+  #minimap { width: 120px; height: 120px; bottom: 10px; right: 10px; }
+  #compass { bottom: 140px; right: 25px; width: 40px; height: 40px; }
+  .hudPanel { padding: 6px 12px; }
+  .hudValue { font-size: 1rem; }
+  .ctrlBtn { width: 48px; height: 48px; font-size: 1.1rem; }
+  #controlsGrid { grid-template-columns: repeat(3, 48px); grid-template-rows: repeat(3, 48px); }
+  .invSlot { width: 42px; height: 42px; font-size: 1.2rem; }
+}
+</style>
+</head>
+<body>
+<div id="gameContainer">
+<canvas id="gameCanvas"></canvas>
+
+<div id="startScreen">
+  <h1>🌍 WORLD EXPLORER</h1>
+  <p class="subtitle">असली जगहों के नाम... लेकिन नक्शे यादृच्छिक (Random) हैं!<br>पूरी दुनिया का वर्चुअल सिमुलेशन</p>
+  <button class="startBtn" onclick="startGame('explore')">🗺️ एक्सप्लोर करें</button>
+  <button class="startBtn" onclick="startGame('treasure')">💎 ट्रेजर हंट</button>
+  <button class="startBtn" onclick="startGame('survival')">⚡ सर्वाइवल</button>
+  <div id="loadingBar"><div id="loadingFill"></div></div>
+</div>
+
+<div id="hud" style="display:none;">
+  <div id="hudTop">
+    <div class="hudPanel">
+      <div class="hudLabel">📍 Location</div>
+      <div id="locationName">-</div>
+      <div id="locationDesc"></div>
+    </div>
+    <div class="hudPanel">
+      <div class="hudLabel">⭐ Score</div>
+      <div class="hudValue" id="scoreVal">0</div>
+    </div>
+    <div class="hudPanel">
+      <div class="hudLabel">❤️ Health</div>
+      <div class="hudValue" id="healthVal">100</div>
+    </div>
+    <div class="hudPanel">
+      <div class="hudLabel">🎒 Items</div>
+      <div class="hudValue" id="itemsVal">0</div>
+    </div>
+  </div>
+</div>
+
+<div id="minimap" style="display:none;">
+  <canvas id="miniCanvas"></canvas>
+</div>
+
+<div id="inventory" style="display:none;"></div>
+
+<div id="controls" style="display:none;">
+  <div id="controlsGrid">
+    <div></div>
+    <button class="ctrlBtn" ontouchstart="mobileInput('up',true)" ontouchend="mobileInput('up',false)">▲</button>
+    <div></div>
+    <button class="ctrlBtn" ontouchstart="mobileInput('left',true)" ontouchend="mobileInput('left',false)">◀</button>
+    <button class="ctrlBtn" ontouchstart="mobileInput('action',true)">Ⓐ</button>
+    <button class="ctrlBtn" ontouchstart="mobileInput('right',true)" ontouchend="mobileInput('right',false)">▶</button>
+    <button class="ctrlBtn" ontouchstart="mobileInput('down',true)" ontouchend="mobileInput('down',false)">▼</button>
+    <button class="ctrlBtn" ontouchstart="mobileInput('map',true)">🗺️</button>
+    <button class="ctrlBtn" ontouchstart="mobileInput('run',true)" ontouchend="mobileInput('run',false)">🏃</button>
+  </div>
+</div>
+
+<div id="dialogue">
+  <div id="dialogueSpeaker"></div>
+  <div id="dialogueText"></div>
+</div>
+
+<div id="notification"></div>
+
+<div id="gameOver">
+  <h2 id="gameOverTitle">GAME OVER</h2>
+  <div id="finalScore">Score: 0</div>
+  <br>
+  <button class="startBtn" onclick="location.reload()">🔄 다시 खेळें</button>
+</div>
+
+<div id="worldMap">
+  <h3>🗺️ Select Destination</h3>
+  <div id="worldMapGrid"></div>
+  <br>
+  <center><button class="startBtn" onclick="closeWorldMap()" style="padding:8px 30px;font-size:0.9rem;">✖ Close</button></center>
+</div>
+</div>
+
+<script>
+// ============ AUDIO SYSTEM ============
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+function initAudio() { if(!audioCtx) audioCtx = new AudioCtx(); }
+
+function playSound(freq, duration, type='sine', vol=0.15) {
+  if(!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+  gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+}
+
+function playStep() { playSound(200 + Math.random()*100, 0.08, 'square', 0.03); }
+function playPickup() { playSound(523, 0.15); setTimeout(()=>playSound(659, 0.15), 80); setTimeout(()=>playSound(784, 0.2), 160); }
+function playHit() { playSound(150, 0.3, 'sawtooth', 0.1); }
+function playTeleport() { for(let i=0;i<5;i++) setTimeout(()=>playSound(300+i*200, 0.15, 'sine', 0.08), i*80); }
+function playNPC() { playSound(400, 0.1); setTimeout(()=>playSound(500, 0.1), 100); }
+
+// ============ WORLD LOCATIONS DATABASE ============
+const WORLD_LOCATIONS = [
+  { name: "Mumbai", country: "India 🇮🇳", type: "Megacity", desc: "बॉलीवुड की राजधानी, Gateway of India की शानदार नगरी" },
+  { name: "Tokyo", country: "Japan 🇯🇵", type: "Metropolis", desc: "नेॉन लाइट्स और प्राचीन मंदिरों का शहर" },
+  { name: "Paris", country: "France 🇫🇷", type: "City of Love", desc: "आइफ़ल टावर और लौवर म्यूज़ियम की नगरी" },
+  { name: "New York", country: "USA 🇺🇸", type: "The Big Apple", desc: "Statue of Liberty और Times Square का शहर" },
+  { name: "Cairo", country: "Egypt 🇪🇬", type: "Ancient Wonder", desc: "पिरामिड्स और Sphinx की रहस्यमयी धरती" },
+  { name: "Sydney", country: "Australia 🇦🇺", type: "Harbour City", desc: "Opera House और सुंदर समुद्र तट" },
+  { name: "London", country: "UK 🇬🇧", type: "Royal Capital", desc: "Big Ben और Buckingham Palace की नगरी" },
+  { name: "Rio de Janeiro", country: "Brazil 🇧🇷", type: "Marvelous City", desc: "क्राइस्ट द रिडीमर और कॉपकाबाना बीच" },
+  { name: "Dubai", country: "UAE 🇦🇪", type: "City of Gold", desc: "Burj Khalifa और रेगिस्तान का आधुनिक चमत्कार" },
+  { name: "Moscow", country: "Russia 🇷🇺", type: "Grand Capital", desc: "क्रेमलिन और रेड स्क्वायर की महाशक्ति" },
+  { name: "Beijing", country: "China 🇨🇳", type: "Imperial Capital", desc: "Great Wall और Forbidden City की विरासत" },
+  { name: "Rome", country: "Italy 🇮🇹", type: "Eternal City", desc: "Colosseum और Vatican की ऐतिहासिक धरती" },
+  { name: "Bangkok", country: "Thailand 🇹🇭", type: "City of Angels", desc: "स्वर्ण मंदिर और सड़क भोजन का स्वर्ग" },
+  { name: "Nairobi", country: "Kenya 🇰🇪", type: "Safari Gateway", desc: "सवाना और जंगली जीवन की धरती" },
+  { name: "Mexico City", country: "Mexico 🇲🇽", type: "Ancient Capital", desc: "Aztec संस्कृति और आधुनिकता का संगम" },
+  { name: "Lagos", country: "Nigeria 🇳🇬", type: "African Megacity", desc: "पश्चिम अफ्रीका का सबसे बड़ा महानगर" },
+  { name: "Istanbul", country: "Turkey 🇹🇷", type: "Continental Bridge", desc: "यूरोप और एशिया का मिलन स्थल" },
+  { name: "Cape Town", country: "South Africa 🇿🇦", type: "Mother City", desc: "Table Mountain और दो महासागरों का मिलन" },
+  { name: "Singapore", country: "Singapore 🇸🇬", type: "Garden City", desc: "आधुनिक वास्तुकला और स्वच्छ हरियाली" },
+  { name: "Buenos Aires", country: "Argentina 🇦🇷", type: "Paris of South America", desc: "टैंगो और गॉस संस्कृति की राजधानी" },
+  { name: "Delhi", country: "India 🇮🇳", type: "National Capital", desc: "Red Fort और India Gate की ऐतिहासिक विरासत" },
+  { name: "Seoul", country: "South Korea 🇰🇷", type: "Tech Hub", desc: "K-Pop, टेक्नोलॉजी और प्राचीन महल" },
+  { name: "Toronto", country: "Canada 🇨🇦", type: "Multicultural Hub", desc: "CN Tower और विविधताओं का शहर" },
+  { name: "Berlin", country: "Germany 🇩🇪", type: "Creative Capital", desc: "Brandenburg Gate और दीवार का इतिहास" },
+  { name: "Havana", country: "Cuba 🇨🇺", type: "Caribbean Jewel", desc: "कलाकारों की धरती और vintage कारों का शहर" },
+  { name: "Kathmandu", country: "Nepal 🇳🇵", type: "Temple City", desc: "हिमालय की गोद में स्थित मंदिरों का शहर" },
+  { name: "Marrakech", country: "Morocco 🇲🇦", type: "Red City", desc: "सूक, रंग और मसालों की जादुई नगरी" },
+  { name: "Reykjavik", country: "Iceland 🇮🇸", type: "Land of Fire & Ice", desc: "नॉर्दर्न लाइट्स और गीज़र की धरती" },
+  { name: "Lima", country: "Peru 🇵🇪", type: "Gastronomic Capital", desc: "Inca विरासत और दुनिया का सबसे अच्छा भोजन" },
+  { name: "Hanoi", country: "Vietnam 🇻🇳", type: "Emerald City", desc: "पुरानी गलियां, Pho और सुंदर झीलें" }
+];
+
+// ============ GAME STATE ============
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const miniCanvas = document.getElementById('miniCanvas');
+const miniCtx = miniCanvas.getContext('2d');
+
+let gameMode = 'explore';
+let gameState = 'menu';
+let score = 0;
+let health = 100;
+let player = { x: 0, y: 0, size: 16, speed: 2, color: '#00f5ff', dir: 0, running: false };
+let currentLocation = null;
+let mapTiles = [];
+let mapWidth = 60, mapHeight = 60;
+let tileSize = 40;
+let camera = { x: 0, y: 0 };
+let npcs = [];
+let items = [];
+let particles = [];
+let keys = {};
+let gameTime = 0;
+let dayNightCycle = 0;
+let weather = 'clear';
+let dialogueQueue = [];
+let showDialogue = false;
+let inventory = [];
+let collected = 0;
+let enemies = [];
+let buildings = [];
+let trees = [];
+let waterTiles = [];
+let paths = [];
+let seed = 0;
+
+// ============ SEEDED RANDOM ============
+function seededRandom(s) {
+  let x = Math.sin(s) * 10000;
+  return x - Math.floor(x);
+}
+
+function noise2D(x, y, s) {
+  return seededRandom(x * 12.9898 + y * 78.233 + s);
+}
+
+// ============ RESIZE ============
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  miniCanvas.width = 180;
+  miniCanvas.height = 180;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ============ MAP GENERATION ============
+function generateMap() {
+  seed = Math.floor(Math.random() * 100000);
+  mapTiles = [];
+  buildings = [];
+  trees = [];
+  waterTiles = [];
+  paths = [];
+  npcs = [];
+  items = [];
+  enemies = [];
+
+  for (let y = 0; y < mapHeight; y++) {
+    mapTiles[y] = [];
+    for (let x = 0; x < mapWidth; x++) {
+      let n = noise2D(x * 0.1, y * 0.1, seed);
+      let n2 = noise2D(x * 0.05, y * 0.05, seed + 500);
+      let n3 = noise2D(x * 0.2, y * 0.2, seed + 1000);
+
+      if (n < 0.15) {
+        mapTiles[y][x] = { type: 'water', color: '#1a3a5c', solid: true };
+        waterTiles.push({ x, y });
+      } else if (n < 0.22) {
+        mapTiles[y][x] = { type: 'sand', color: '#c2b280', solid: false };
+      } else if (n < 0.25 && n2 > 0.5) {
+        mapTiles[y][x] = { type: 'path', color: '#8a7a6a', solid: false };
+        paths.push({ x, y });
+      } else if (n2 > 0.65) {
+        mapTiles[y][x] = { type: 'grass', color: '#2d5a1e', solid: false };
+        if (n3 > 0.7) {
+          trees.push({ x, y, size: 15 + n3 * 15, sway: Math.random() * Math.PI * 2 });
+          mapTiles[y][x].solid = true;
+        }
+      } else {
+        mapTiles[y][x] = { type: 'grass', color: '#3a7a2a', solid: false };
+      }
+    }
+  }
+
+  // Ensure paths connect
+  for (let i = 0; i < 15; i++) {
+    let sx = Math.floor(noise2D(i, 0, seed + 2000) * mapWidth);
+    let sy = Math.floor(noise2D(i, 1, seed + 2000) * mapHeight);
+    let ex = Math.floor(noise2D(i, 2, seed + 2000) * mapWidth);
+    let ey = Math.floor(noise2D(i, 3, seed + 2000) * mapHeight);
+    let cx = sx, cy = sy;
+    while (cx !== ex || cy !== ey) {
+      if (cx >= 0 && cx < mapWidth && cy >= 0 && cy < mapHeight) {
+        mapTiles[cy][cx] = { type: 'path', color: '#8a7a6a', solid: false };
+        paths.push({ x: cx, y: cy });
+      }
+      if (cx < ex) cx++;
+      else if (cx > ex) cx--;
+      else if (cy < ey) cy++;
+      else if (cy > ey) cy--;
+    }
+  }
+
+  // Generate buildings
+  let buildingCount = 8 + Math.floor(noise2D(0, 0, seed + 3000) * 12);
+  let buildingColors = ['#8B4513', '#A0522D', '#696969', '#4a6741', '#c4a882', '#d4a76a', '#887766', '#556677'];
+  for (let i = 0; i < buildingCount; i++) {
+    let bx, by, attempts = 0;
+    do {
+      bx = 5 + Math.floor(Math.random() * (mapWidth - 10));
+      by = 5 + Math.floor(Math.random() * (mapHeight - 10));
+      attempts++;
+    } while (attempts < 50 && (mapTiles[by][bx].solid || mapTiles[by][bx].type === 'water'));
+
+    let bw = 2 + Math.floor(Math.random() * 3);
+    let bh = 2 + Math.floor(Math.random() * 3);
+    let color = buildingColors[Math.floor(Math.random() * buildingColors.length)];
+
+    buildings.push({
+      x: bx, y: by, w: bw, h: bh, color: color,
+      height: 1 + Math.random() * 3,
+      roofColor: ['#8B0000', '#2F4F4F', '#4a3728', '#555', '#3a5a3a'][Math.floor(Math.random() * 5)],
+      hasDoor: Math.random() > 0.3,
+      windows: Math.floor(Math.random() * 4) + 1
+    });
+
+    for (let dy = 0; dy < bh; dy++) {
+      for (let dx = 0; dx < bw; dx++) {
+        if (by + dy < mapHeight && bx + dx < mapWidth) {
+          mapTiles[by + dy][bx + dx] = { type: 'building', solid: true };
+        }
+      }
+    }
+  }
+
+  // Generate NPCs
+  let npcCount = 5 + Math.floor(Math.random() * 8);
+  let npcTypes = ['🧑‍🌾', '👮', '🧕', '👴', '👩‍🔬', '🧑‍🍳', '👷', '🧑‍🎨', '🧑‍💼', '🧑‍🚒'];
+  let npcDialogues = [
+    "यहाँ का मौसम बहुत अच्छा है!", "क्या आपने बाज़ार देखा?", "इस शहर में बहुत रहस्य हैं...",
+    "सावधान रहें, कुछ जगह खतरनाक हैं", "मैं इस शहर का गाइड हूँ!", "आज बहुत भीड़ है बाज़ार में",
+    "रात को यहाँ घूमना सुरक्षित नहीं", "क्या आप पर्यटक हैं?", "यहाँ की चाय बहुत प्रसिद्ध है!",
+    "पुराने मंदिर की कहानी बहुत रोचक है"
+  ];
+  for (let i = 0; i < npcCount; i++) {
+    let nx, ny, att = 0;
+    do {
+      nx = 3 + Math.floor(Math.random() * (mapWidth - 6));
+      ny = 3 + Math.floor(Math.random() * (mapHeight - 6));
+      att++;
+    } while (att < 30 && mapTiles[ny][nx].solid);
+
+    npcs.push({
+      x: nx * tileSize + tileSize / 2,
+      y: ny * tileSize + tileSize / 2,
+      sprite: npcTypes[Math.floor(Math.random() * npcTypes.length)],
+      dialogue: npcDialogues[Math.floor(Math.random() * npcDialogues.length)],
+      dir: Math.floor(Math.random() * 4),
+      moveTimer: Math.random() * 200,
+      moveDelay: 100 + Math.floor(Math.random() * 200),
+      origTileX: nx, origTileY: ny
+    });
+  }
+
+  // Generate items
+  let itemCount = 10 + Math.floor(Math.random() * 15);
+  let itemTypes = ['💎', '🪙', '📦', '🗝️', '⭐', '💰', '🎁', '🍎', '🧪', '📜'];
+  for (let i = 0; i < itemCount; i++) {
+    let ix, iy, att = 0;
+    do {
+      ix = 2 + Math.floor(Math.random() * (mapWidth - 4));
+      iy = 2 + Math.floor(Math.random() * (mapHeight - 4));
+      att++;
+    } while (att < 30 && mapTiles[iy][ix].solid);
+
+    items.push({
+      x: ix * tileSize + tileSize / 2,
+      y: iy * tileSize + tileSize / 2,
+      type: itemTypes[Math.floor(Math.random() * itemTypes.length)],
+      value: Math.floor(Math.random() * 50) + 10,
+      collected: false,
+      bobOffset: Math.random() * Math.PI * 2
+    });
+  }
+
+  // Generate enemies (for survival mode)
+  if (gameMode === 'survival') {
+    let enemyCount = 5 + Math.floor(Math.random() * 8);
+    for (let i = 0; i < enemyCount; i++) {
+      let ex, ey, att = 0;
+      do {
+        ex = 5 + Math.floor(Math.random() * (mapWidth - 10));
+        ey = 5 + Math.floor(Math.random() * (mapHeight - 10));
+        att++;
+      } while (att < 30 && mapTiles[ey][ex].solid);
+
+      enemies.push({
+        x: ex * tileSize + tileSize / 2,
+        y: ey * tileSize + tileSize / 2,
+        size: 14,
+        speed: 0.8 + Math.random() * 0.6,
+        dir: Math.random() * Math.PI * 2,
+        hp: 30 + Math.random() * 30,
+        maxHp: 60,
+        color: '#ff4444',
+        attackTimer: 0,
+        aggroRange: 120
+      });
+    }
+  }
+
+  // Set player position on path
+  if (paths.length > 0) {
+    let sp = paths[Math.floor(Math.random() * paths.length)];
+    player.x = sp.x * tileSize + tileSize / 2;
+    player.y = sp.y * tileSize + tileSize / 2;
+  }
+}
+
+// ============ RENDERING ============
+function drawTile(x, y, tile) {
+  let sx = x * tileSize - camera.x;
+  let sy = y * tileSize - camera.y;
+
+  if (sx < -tileSize || sy < -tileSize || sx > canvas.width + tileSize || sy > canvas.height + tileSize) return;
+
+  ctx.fillStyle = tile.color || '#3a7a2a';
+  ctx.fillRect(sx, sy, tileSize, tileSize);
+
+  // Grass detail
+  if (tile.type === 'grass') {
+    let n = noise2D(x * 0.3, y * 0.3, seed + 5000);
+    if (n > 0.7) {
+      ctx.fillStyle = 'rgba(60, 140, 30, 0.5)';
+      ctx.fillRect(sx + 5, sy + 5, 4, 4);
+    }
+  }
+
+  // Water animation
+  if (tile.type === 'water') {
+    let wave = Math.sin(gameTime * 0.02 + x * 0.5 + y * 0.3) * 0.1;
+    ctx.fillStyle = `rgba(100, 180, 255, ${0.2 + wave})`;
+    ctx.fillRect(sx, sy, tileSize, tileSize);
+  }
+
+  // Path texture
+  if (tile.type === 'path') {
+    ctx.fillStyle = 'rgba(160, 140, 110, 0.3)';
+    if ((x + y) % 2 === 0) {
+      ctx.fillRect(sx + 2, sy + 2, tileSize - 4, tileSize - 4);
+    }
+  }
+}
+
+function drawTree(tree) {
+  let sx = tree.x * tileSize + tileSize / 2 - camera.x;
+  let sy = tree.y * tileSize + tileSize / 2 - camera.y;
+
+  if (sx < -50 || sy < -50 || sx > canvas.width + 50 || sy > canvas.height + 50) return;
+
+  let sway = Math.sin(gameTime * 0.03 + tree.sway) * 3;
+
+  // Trunk
+  ctx.fillStyle = '#5a3a1a';
+  ctx.fillRect(sx - 4 + sway * 0.5, sy - tree.size * 0.5, 8, tree.size);
+
+  // Canopy
+  let gradient = ctx.createRadialGradient(sx + sway, sy - tree.size * 0.8, 0, sx + sway, sy - tree.size * 0.8, tree.size * 0.7);
+  gradient.addColorStop(0, '#2a8a2a');
+  gradient.addColorStop(1, '#1a5a1a');
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(sx + sway, sy - tree.size * 0.8, tree.size * 0.6, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#1a6a1a';
+  ctx.beginPath();
+  ctx.arc(sx + sway - 5, sy - tree.size * 0.6, tree.size * 0.4, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawBuilding(b) {
+  let sx = b.x * tileSize - camera.x;
+  let sy = b.y * tileSize - camera.y;
+
+  if (sx < -b.w * tileSize - 20 || sy < -b.h * tileSize - 50 || sx > canvas.width + 20 || sy > canvas.height + 20) return;
+
+  let bw = b.w * tileSize;
+  let bh = b.h * tileSize;
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillRect(sx + 5, sy + 5, bw, bh);
+
+  // Main building
+  ctx.fillStyle = b.color;
+  ctx.fillRect(sx, sy, bw, bh);
+
+  // Roof
+  ctx.fillStyle = b.roofColor;
+  ctx.fillRect(sx - 3, sy - 5, bw + 6, 8);
+
+  // Windows
+  let nightAlpha = getNightAlpha();
+  for (let wy = 0; wy < b.windows; wy++) {
+    let winX = sx + 10 + wy * (bw / (b.windows + 1));
+    let winY = sy + 10;
+    ctx.fillStyle = nightAlpha > 0.3 ? `rgba(255, 255, 150, ${nightAlpha})` : 'rgba(100, 180, 255, 0.5)';
+    ctx.fillRect(winX, winY, 8, 12);
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.strokeRect(winX, winY, 8, 12);
+  }
+
+  // Door
+  if (b.hasDoor) {
+    ctx.fillStyle = '#4a2a0a';
+    ctx.fillRect(sx + bw / 2 - 5, sy + bh - 20, 10, 20);
+    ctx.fillStyle = '#c8a84a';
+    ctx.beginPath();
+    ctx.arc(sx + bw / 2 + 2, sy + bh - 10, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Height indicator
+  if (b.height > 2) {
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.font = '10px sans-serif';
+    ctx.fillText(`🏢`, sx + bw / 2 - 5, sy - 8);
+  }
+}
+
+function drawPlayer() {
+  let sx = player.x - camera.x;
+  let sy = player.y - camera.y;
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(sx, sy + player.size, player.size * 0.8, player.size * 0.3, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Body
+  let gradient = ctx.createRadialGradient(sx, sy - 5, 0, sx, sy, player.size);
+  gradient.addColorStop(0, '#00f5ff');
+  gradient.addColorStop(1, '#7b2ff7');
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(sx, sy, player.size, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eyes
+  let eyeOffX = Math.cos(player.dir) * 4;
+  let eyeOffY = Math.sin(player.dir) * 4;
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(sx + eyeOffX - 3, sy + eyeOffY - 2, 3, 0, Math.PI * 2);
+  ctx.arc(sx + eyeOffX + 3, sy + eyeOffY - 2, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#111';
+  ctx.beginPath();
+  ctx.arc(sx + eyeOffX - 2, sy + eyeOffY - 2, 1.5, 0, Math.PI * 2);
+  ctx.arc(sx + eyeOffX + 4, sy + eyeOffY - 2, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Glow
+  ctx.shadowColor = '#00f5ff';
+  ctx.shadowBlur = 15;
+  ctx.strokeStyle = 'rgba(0, 245, 255, 0.3)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(sx, sy, player.size + 5 + Math.sin(gameTime * 0.1) * 3, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+}
+
+function drawNPC(npc) {
+  let sx = npc.x - camera.x;
+  let sy = npc.y - camera.y;
+
+  if (sx < -30 || sy < -30 || sx > canvas.width + 30 || sy > canvas.height + 30) return;
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.2)';
+  ctx.beginPath();
+  ctx.ellipse(sx, sy + 12, 10, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Sprite
+  ctx.font = '22px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(npc.sprite, sx, sy + 8);
+
+  // Interaction indicator
+  let dist = Math.hypot(player.x - npc.x, player.y - npc.y);
+  if (dist < 50) {
+    ctx.strokeStyle = 'rgba(255, 0, 110, 0.6)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(sx, sy, 18 + Math.sin(gameTime * 0.08) * 3, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ff006e';
+    ctx.font = '10px Orbitron, sans-serif';
+    ctx.fillText('Ⓐ Talk', sx, sy - 25);
+  }
+}
+
+function drawItem(item) {
+  if (item.collected) return;
+  let sx = item.x - camera.x;
+  let sy = item.y - camera.y + Math.sin(gameTime * 0.05 + item.bobOffset) * 5;
+
+  if (sx < -20 || sy < -20 || sx > canvas.width + 20 || sy > canvas.height + 20) return;
+
+  // Glow
+  ctx.shadowColor = '#ffdd00';
+  ctx.shadowBlur = 10;
+
+  ctx.font = '20px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(item.type, sx, sy + 7);
+
+  ctx.shadowBlur = 0;
+}
+
+function drawEnemy(enemy) {
+  let sx = enemy.x - camera.x;
+  let sy = enemy.y - camera.y;
+
+  if (sx < -30 || sy < -30 || sx > canvas.width + 30 || sy > canvas.height + 30) return;
+
+  // Body
+  let gradient = ctx.createRadialGradient(sx, sy, 0, sx, sy, enemy.size);
+  gradient.addColorStop(0, '#ff6666');
+  gradient.addColorStop(1, '#cc0000');
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(sx, sy, enemy.size, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Angry eyes
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(sx - 5, sy - 3, 3, 0, Math.PI * 2);
+  ctx.arc(sx + 5, sy - 3, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ff0000';
+  ctx.beginPath();
+  ctx.arc(sx - 4, sy - 3, 1.5, 0, Math.PI * 2);
+  ctx.arc(sx + 6, sy - 3, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // HP bar
+  let hpRatio = enemy.hp / enemy.maxHp;
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(sx - 15, sy - enemy.size - 10, 30, 5);
+  ctx.fillStyle = hpRatio > 0.5 ? '#44ff44' : hpRatio > 0.25 ? '#ffaa00' : '#ff4444';
+  ctx.fillRect(sx - 15, sy - enemy.size - 10, 30 * hpRatio, 5);
+}
+
+function drawParticles() {
+  particles.forEach((p, i) => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life -= 0.02;
+    if (p.life <= 0) { particles.splice(i, 1); return; }
+
+    let sx = p.x - camera.x;
+    let sy = p.y - camera.y;
+
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(sx, sy, p.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+}
+
+function getNightAlpha() {
+  return Math.max(0, Math.sin(dayNightCycle * 0.001 - Math.PI / 2));
+}
+
+function drawDayNightOverlay() {
+  let alpha = getNightAlpha() * 0.5;
+  if (alpha > 0) {
+    ctx.fillStyle = `rgba(10, 10, 60, ${alpha})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  // Rain effect
+  if (weather === 'rain') {
+    ctx.strokeStyle = 'rgba(150, 180, 255, 0.3)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 100; i++) {
+      let rx = (noise2D(i, gameTile * 0.1, seed + 9000) * canvas.width + gameTime * 2) % canvas.width;
+      let ry = (noise2D(i, gameTile * 0.2 + 500, seed + 9000) * canvas.height + gameTime * 5) % canvas.height;
+      ctx.beginPath();
+      ctx.moveTo(rx, ry);
+      ctx.lineTo(rx - 2, ry + 12);
+      ctx.stroke();
+    }
+  }
+}
+
+function drawHUD() {
+  document.getElementById('scoreVal').textContent = score;
+  document.getElementById('healthVal').textContent = Math.ceil(health);
+  document.getElementById('itemsVal').textContent = collected;
+
+  if (currentLocation) {
+    document.getElementById('locationName').textContent = `📍 ${currentLocation.name}`;
+    document.getElementById('locationDesc').textContent = `${currentLocation.country} — ${currentLocation.type}`;
+  }
+}
+
+function drawMinimap() {
+  miniCtx.clearRect(0, 0, 180, 180);
+  miniCtx.fillStyle = '#1a1a3e';
+  miniCtx.fillRect(0, 0, 180, 180);
+
+  let scale = 3;
+  let offsetX = 90 - (player.x / tileSize) * scale;
+  let offsetY = 90 - (player.y / tileSize) * scale;
+
+  // Draw tiles on minimap
+  for (let y = 0; y < mapHeight; y++) {
+    for (let x = 0; x < mapWidth; x++) {
+      let sx = x * scale + offsetX;
+      let sy = y * scale + offsetY;
+      if (sx < -5 || sy < -5 || sx > 185 || sy > 185) continue;
+
+      let tile = mapTiles[y][x];
+      if (tile.type === 'water') miniCtx.fillStyle = '#1a3a5c';
+      else if (tile.type === 'path') miniCtx.fillStyle = '#8a7a6a';
+      else if (tile.type === 'building') miniCtx.fillStyle = '#666';
+      else miniCtx.fillStyle = '#2d5a1e';
+
+      miniCtx.fillRect(sx, sy, scale, scale);
+    }
+  }
+
+  // Player
+  miniCtx.fillStyle = '#00f5ff';
+  miniCtx.beginPath();
+  miniCtx.arc(90, 90, 4, 0, Math.PI * 2);
+  miniCtx.fill();
+
+  // NPC dots
+  miniCtx.fillStyle = '#ffdd00';
+  npcs.forEach(npc => {
+    let mx = (npc.x / tileSize) * scale + offsetX;
+    let my = (npc.y / tileSize) * scale + offsetY;
+    if (mx > 0 && mx < 180 && my > 0 && my < 180) {
+      miniCtx.beginPath();
+      miniCtx.arc(mx, my, 2, 0, Math.PI * 2);
+      miniCtx.fill();
+    }
+  });
+
+  // Enemy dots
+  miniCtx.fillStyle = '#ff4444';
+  enemies.forEach(e => {
+    let mx = (e.x / tileSize) * scale + offsetX;
+    let my = (e.y / tileSize) * scale + offsetY;
+    if (mx > 0 && mx < 180 && my > 0 && my < 180) {
+      miniCtx.beginPath();
+      miniCtx.arc(mx, my, 2.5, 0, Math.PI * 2);
+      miniCtx.fill();
+    }
+  });
+
+  // Item dots
+  miniCtx.fillStyle = '#ffdd00';
+  items.forEach(item => {
+    if (item.collected) return;
+    let mx = (item.x / tileSize) * scale + offsetX;
+    let my = (item.y / tileSize) * scale + offsetY;
+    if (mx > 0 && mx < 180 && my > 0 && my < 180) {
+      miniCtx.fillRect(mx - 1, my - 1, 2, 2);
+    }
+  });
+}
+
+// ============ UPDATE LOGIC ============
+let gameTimeAccum = 0;
+let gameTile = 0;
+
+function update() {
+  if (gameState !== 'playing') return;
+  gameTime++;
+  gameTimeAccum++;
+  gameTile = gameTime;
+  dayNightCycle = gameTime;
+
+  // Weather changes
+  if (gameTime % 3000 === 0) {
+    weather = Math.random() > 0.6 ? 'rain' : 'clear';
+    showNotification(weather === 'rain' ? '🌧️ बारिश शुरू हो गई!' : '☀️ मौसम साफ़ हो गया!');
+  }
+
+  // Player movement
+  let speed = player.speed * (player.running ? 2 : 1);
+  let dx = 0, dy = 0;
+  if (keys['ArrowUp'] || keys['w'] || keys['W']) dy = -1;
+  if (keys['ArrowDown'] || keys['s'] || keys['S']) dy = 1;
+  if (keys['ArrowLeft'] || keys['a'] || keys['A']) dx = -1;
+  if (keys['ArrowRight'] || keys['d'] || keys['D']) dx = 1;
+
+  if (dx !== 0 || dy !== 0) {
+    let len = Math.sqrt(dx * dx + dy * dy);
+    dx /= len; dy /= len;
+    player.dir = Math.atan2(dy, dx);
+
+    let nx = player.x + dx * speed;
+    let ny = player.y + dy * speed;
+
+    // Tile collision
+    let tileX = Math.floor(nx / tileSize);
+    let tileY = Math.floor(ny / tileSize);
+
+    let blocked = false;
+    if (tileX < 0 || tileX >= mapWidth || tileY < 0 || tileY >= mapHeight) blocked = true;
+    else if (mapTiles[tileY][tileX].solid) blocked = true;
+
+    if (!blocked) {
+      player.x = nx;
+      player.y = ny;
+
+      if (gameTime % 8 === 0) playStep();
+    }
+
+    // Running particles
+    if (player.running && gameTime % 3 === 0) {
+      particles.push({
+        x: player.x, y: player.y + player.size,
+        vx: (Math.random() - 0.5) * 2, vy: -Math.random() * 2,
+        life: 1, color: 'rgba(0, 245, 255, 0.5)', size: 2 + Math.random() * 3
+      });
+    }
+  }
+
+  // Camera follow
+  camera.x += (player.x - canvas.width / 2 - camera.x) * 0.1;
+  camera.y += (player.y - canvas.height / 2 - camera.y) * 0.1;
+
+  // Update NPCs
+  npcs.forEach(npc => {
+    npc.moveTimer++;
+    if (npc.moveTimer > npc.moveDelay) {
+      npc.moveTimer = 0;
+      npc.moveDelay = 100 + Math.floor(Math.random() * 200);
+      npc.dir = Math.floor(Math.random() * 4);
+
+      let ndx = [0, 1, 0, -1][npc.dir];
+      let ndy = [-1, 0, 1, 0][npc.dir];
+      let nnx = npc.x + ndx * tileSize * 0.5;
+      let nny = npc.y + ndy * tileSize * 0.5;
+      let ntileX = Math.floor(nnx / tileSize);
+      let ntileY = Math.floor(nny / tileSize);
+
+      if (ntileX >= 0 && ntileX < mapWidth && ntileY >= 0 && ntileY < mapHeight && !mapTiles[ntileY][ntileX].solid) {
+        npc.x = nnx;
+        npc.y = nny;
+      }
+    }
+  });
+
+  // Item collection
+  items.forEach(item => {
+    if (item.collected) return;
+    let dist = Math.hypot(player.x - item.x, player.y - item.y);
+    if (dist < 25) {
+      item.collected = true;
+      score += item.value;
+      collected++;
+      playPickup();
+      showNotification(`${item.type} +${item.value} points!`);
+
+      // Particles
+      for (let i = 0; i < 10; i++) {
+        particles.push({
+          x: item.x, y: item.y,
+          vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4,
+          life: 1, color: '#ffdd00', size: 2 + Math.random() * 3
+        });
+      }
+    }
+  });
+
+  // Survival mode: enemy AI
+  if (gameMode === 'survival') {
+    enemies.forEach(enemy => {
+      let distToPlayer = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+
+      if (distToPlayer < enemy.aggroRange) {
+        // Chase player
+        let angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+        let enx = enemy.x + Math.cos(angle) * enemy.speed;
+        let eny = enemy.y + Math.sin(angle) * enemy.speed;
+        let etx = Math.floor(enx / tileSize);
+        let ety = Math.floor(eny / tileSize);
+
+        if (etx >= 0 && etx < mapWidth && ety >= 0 && ety < mapHeight && !mapTiles[ety][etx].solid) {
+          enemy.x = enx;
+          enemy.y = eny;
+        }
+
+        // Attack
+        enemy.attackTimer++;
+        if (distToPlayer < 30 && enemy.attackTimer > 60) {
+          enemy.attackTimer = 0;
+          health -= 5 + Math.random() * 5;
+          playHit();
+          showNotification('💥 Enemy attack! -HP');
+
+          if (health <= 0) {
+            gameOver();
+          }
+        }
+      } else {
+        // Wander
+        enemy.dir += (Math.random() - 0.5) * 0.3;
+        let enx = enemy.x + Math.cos(enemy.dir) * enemy.speed * 0.3;
+        let eny = enemy.y + Math.sin(enemy.dir) * enemy.speed * 0.3;
+        let etx = Math.floor(enx / tileSize);
+        let ety = Math.floor(eny / tileSize);
+
+        if (etx >= 0 && etx < mapWidth && ety >= 0 && ety < mapHeight && !mapTiles[ety][etx].solid) {
+          enemy.x = enx;
+          enemy.y = eny;
+        }
+      }
+    });
+
+    // Health regen over time
+    if (gameTime % 120 === 0 && health < 100) {
+      health = Math.min(100, health + 1);
+    }
+  }
+
+  // Teleport between locations
+  if (gameTime % 60 === 0) {
+    let tileX = Math.floor(player.x / tileSize);
+    let tileY = Math.floor(player.y / tileSize);
+    if (tileX >= 0 && tileX < mapWidth && tileY >= 0 && tileY < mapHeight) {
+      if (mapTiles[tileY][tileX].type === 'path' && tileX % 20 === 0 && tileY % 20 === 0) {
+        // Found a teleport point!
+      }
+    }
+  }
+
+  drawHUD();
+  drawMinimap();
+}
+
+// ============ MAIN RENDER ============
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Background gradient based on time
+  let night = getNightAlpha();
+  if (night > 0) {
+    let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    bgGrad.addColorStop(0, `rgb(${10 + night * 5}, ${10 + night * 5}, ${40 + night * 20})`);
+    bgGrad.addColorStop(1, `rgb(${20 + night * 10}, ${15 + night * 10}, ${30 + night * 15})`);
+    ctx.fillStyle = bgGrad;
+  } else {
+    let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    bgGrad.addColorStop(0, '#1a2a4a');
+    bgGrad.addColorStop(1, '#0a1a2a');
+    ctx.fillStyle = bgGrad;
+  }
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  if (gameState !== 'playing') {
+    requestAnimationFrame(render);
+    return;
+  }
+
+  // Visible tile range
+  let startTX = Math.max(0, Math.floor(camera.x / tileSize) - 1);
+  let startTY = Math.max(0, Math.floor(camera.y / tileSize) - 1);
+  let endTX = Math.min(mapWidth - 1, Math.ceil((camera.x + canvas.width) / tileSize) + 1);
+  let endTY = Math.min(mapHeight - 1, Math.ceil((camera.y + canvas.height) / tileSize) + 1);
+
+  // Sort buildings by Y for isometric-like rendering
+  let sortedBuildings = [...buildings].sort((a, b) => a.y - b.y);
+
+  // Draw tiles
+  for (let y = startTY; y <= endTY; y++) {
+    for (let x = startTX; x <= endTX; x++) {
+      drawTile(x, y, mapTiles[y][x]);
+    }
+  }
+
+  // Draw paths highlight
+  paths.forEach(p => {
+    if (p.x >= startTX - 1 && p.x <= endTX + 1 && p.y >= startTY - 1 && p.y <= endTY + 1) {
+      let sx = p.x * tileSize - camera.x;
+      let sy = p.y * tileSize - camera.y;
+      ctx.fillStyle = 'rgba(160, 140, 110, 0.15)';
+      ctx.fillRect(sx, sy, tileSize, tileSize);
+    }
+  });
+
+  // Draw trees
+  trees.forEach(drawTree);
+
+  // Draw buildings
+  sortedBuildings.forEach(drawBuilding);
+
+  // Draw items
+  items.forEach(drawItem);
+
+  // Draw enemies (survival mode)
+  enemies.forEach(drawEnemy);
+
+  // Draw NPCS
+  npcs.forEach(drawNPC);
+
+  // Draw player
+  drawPlayer();
+
+  // Particles
+  drawParticles();
+
+  // Day/night overlay
+  drawDayNightOverlay();
+
+  update();
+  requestAnimationFrame(render);
+}
+
+// ============ GAME CONTROLS ============
+function mobileInput(key, state) {
+  initAudio();
+  if (key === 'up') { keys['ArrowUp'] = state; }
+  else if (key === 'down') { keys['ArrowDown'] = state; }
+  else if (key === 'left') { keys['ArrowLeft'] = state; }
+  else if (key === 'right') { keys['ArrowRight'] = state; }
+  else if (key === 'run') { player.running = state; }
+  else if (key === 'action') {
+    if (state) interact();
+  }
+  else if (key === 'map') {
+    if (state) openWorldMap();
+  }
+}
+
+function interact() {
+  // Check NPC proximity
+  let nearestNPC = null;
+  let nearestDist = 50;
+  npcs.forEach(npc => {
+    let dist = Math.hypot(player.x - npc.x, player.y - npc.y);
+    if (dist < nearestDist) {
+      nearestDist = dist;
+      nearestNPC = npc;
+    }
+  });
+
+  if (nearestNPC) {
+    showDialogueBox(nearestNPC.sprite, nearestNPC.dialogue);
+    playNPC();
+    score += 5;
+    return;
+  }
+
+  // Check if on path for teleport
+  let tileX = Math.floor(player.x / tileSize);
+  let tileY = Math.floor(player.y / tileSize);
+  if (tileX >= 0 && tileX < mapWidth && tileY >= 0 && tileY < mapHeight) {
+    if (mapTiles[tileY][tileX].type === 'path') {
+      teleportToNewLocation();
+    }
+  }
+}
+
+function showDialogueBox(speaker, text) {
+  document.getElementById('dialogueSpeaker').textContent = speaker;
+  document.getElementById('dialogueText').textContent = text;
+  document.getElementById('dialogue').style.display = 'block';
+  showDialogue = true;
+
+  setTimeout(() => {
+    document.getElementById('dialogue').style.display = 'none';
+    showDialogue = false;
+  }, 4000);
+}
+
+function teleportToNewLocation() {
+  let locIndex = Math.floor(Math.random() * WORLD_LOCATIONS.length);
+  let newLoc = WORLD_LOCATIONS[locIndex];
+
+  showNotification(`🚀 यात्रा कर रहे हैं: ${newLoc.name}...`);
+  playTeleport();
+
+  // Teleport particles
+  for (let i = 0; i < 20; i++) {
+    particles.push({
+      x: player.x, y: player.y,
+      vx: (Math.random() - 0.5) * 8, vy: (Math.random() - 0.5) * 8,
+      life: 1.5, color: '#7b2ff7', size: 3 + Math.random() * 4
+    });
+  }
+
+  setTimeout(() => {
+    currentLocation = newLoc;
+    generateMap();
+    showNotification(`📍 पहुंचे: ${newLoc.name}, ${newLoc.country}`);
+  }, 1500);
+}
+
+function showNotification(text) {
+  let notif = document.getElementById('notification');
+  notif.textContent = text;
+  notif.style.display = 'block';
+  setTimeout(() => { notif.style.display = 'none'; }, 3000);
+}
+
+function gameOver() {
+  gameState = 'gameover';
+  document.getElementById('gameOver').style.display = 'flex';
+  document.getElementById('finalScore').textContent = `Score: ${score} | Items: ${collected} | ${currentLocation ? currentLocation.name : ''}`;
+}
+
+function openWorldMap() {
+  let grid = document.getElementById('worldMapGrid');
+  grid.innerHTML = '';
+  WORLD_LOCATIONS.forEach(loc => {
+    let div = document.createElement('div');
+    div.className = 'mapLoc';
+    div.innerHTML = `<div class="locName">${loc.name}</div><div class="locCountry">${loc.country}</div><div class="locType">${loc.type}</div>`;
+    div.onclick = () => {
+      currentLocation = loc;
+      closeWorldMap();
+      playTeleport();
+      showNotification(`🚀 यात्रा कर रहे हैं: ${loc.name}...`);
+
+      for (let i = 0; i < 20; i++) {
+        particles.push({
+          x: player.x, y: player.y,
+          vx: (Math.random() - 0.5) * 8, vy: (Math.random() - 0.5) * 8,
+          life: 1.5, color: '#00f5ff', size: 3 + Math.random() * 4
+        });
+      }
+
+      setTimeout(() => {
+        generateMap();
+        showNotification(`📍 पहुंचे: ${loc.name}, ${loc.country}`);
+      }, 1000);
+    };
+    grid.appendChild(div);
+  });
+  document.getElementById('worldMap').style.display = 'block';
+}
+
+function closeWorldMap() {
+  document.getElementById('worldMap').style.display = 'none';
+}
+
+// ============ KEYBOARD ============
+window.addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if (e.key === 'e' || e.key === 'E') interact();
+  if (e.key === 'm' || e.key === 'M') {
+    if (document.getElementById('worldMap').style.display === 'block') closeWorldMap();
+    else openWorldMap();
+  }
+  if (e.key === 'Shift') player.running = true;
+});
+
+window.addEventListener('keyup', e => {
+  keys[e.key] = false;
+  if (e.key === 'Shift') player.running = false;
+});
+
+// ============ START GAME ============
+function startGame(mode) {
+  initAudio();
+  gameMode = mode;
+  gameState = 'playing';
+  score = 0;
+  health = 100;
+  collected = 0;
+  particles = [];
+  inventory = [];
+  gameTime = 0;
+
+  let locIndex = Math.floor(Math.random() * WORLD_LOCATIONS.length);
+  currentLocation = WORLD_LOCATIONS[locIndex];
+
+  // Loading animation
+  let fill = document.getElementById('loadingFill');
+  let progress = 0;
+  let loadInterval = setInterval(() => {
+    progress += Math.random() * 15;
+    if (progress >= 100) progress = 100;
+    fill.style.width = progress + '%';
+    if (progress >= 100) {
+      clearInterval(loadInterval);
+      setTimeout(() => {
+        document.getElementById('startScreen').style.opacity = '0';
+        setTimeout(() => {
+          document.getElementById('startScreen').style.display = 'none';
+          document.getElementById('hud').style.display = 'block';
+          document.getElementById('minimap').style.display = 'block';
+          document.getElementById('inventory').style.display = 'flex';
+          document.getElementById('controls').style.display = 'block';
+
+          generateMap();
+          showNotification(`📍欢迎来到 ${currentLocation.name}, ${currentLocation.country}`);
+
+          // Build inventory UI
+          let invEl = document.getElementById('inventory');
+          invEl.innerHTML = '';
+          for (let i = 0; i < 8; i++) {
+            let slot = document.createElement('div');
+            slot.className = 'invSlot' + (i === 0 ? ' active' : '');
+            slot.textContent = i === 0 ? '🗺️' : '';
+            invEl.appendChild(slot);
+          }
+
+          render();
+        }, 500);
+      }, 300);
+    }
+  }, 100);
+}
+
+// ============ TOUCH PAN/SCROLL PREVENTION ============
+document.addEventListener('touchmove', e => {
+  if (gameState === 'playing') e.preventDefault();
+}, { passive: false });
+
+// ============ AMBIENT SOUNDS ============
+setInterval(() => {
+  if (gameState === 'playing' && weather === 'rain') {
+    playSound(80 + Math.random() * 40, 0.5, 'sine', 0.02);
+  }
+}, 2000);
+</script>
+</body>
+</html>
